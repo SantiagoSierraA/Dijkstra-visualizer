@@ -2,9 +2,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DijkstraVisualizer {
-    JFrame frame  = new JFrame("Dijkstra Visualizer");
+    JFrame frame = new JFrame("Dijkstra Visualizer");
     JPanel gridPanel = new JPanel();
     JPanel controlPanel = new JPanel();
     JButton[][] cells = new JButton[10][10];
@@ -13,6 +15,8 @@ public class DijkstraVisualizer {
     int endRow = 8;
     int endCol = 8;
 
+    List<Integer> visitOrder = new ArrayList<>();
+
     Color wallColor = new Color(21, 21, 20);
     Color cellColor = new Color(245, 249, 228);
     Color pathColor = new Color(255, 0, 255);
@@ -20,6 +24,7 @@ public class DijkstraVisualizer {
 
     boolean isDragging = false;
     boolean isAddingWalls = true;
+    boolean isAnimating = false;
 
     DijkstraVisualizer() {
         // Frame
@@ -41,7 +46,7 @@ public class DijkstraVisualizer {
 
 
         // Grid panel
-        gridPanel.setLayout(new GridLayout(10, 10,2,2));
+        gridPanel.setLayout(new GridLayout(10, 10, 2, 2));
         gridPanel.setBackground(Color.BLACK);
         frame.add(gridPanel);
 
@@ -51,9 +56,9 @@ public class DijkstraVisualizer {
         createGrid();
     }
 
-    void createGrid(){
-        for(int i = 0; i < 10; i++) {
-            for(int j = 0; j < 10; j++) {
+    void createGrid() {
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 10; j++) {
                 JButton cell = new JButton();
                 cell.setFocusable(false);
                 cell.setBorderPainted(true);
@@ -62,12 +67,10 @@ public class DijkstraVisualizer {
                 if (i == startRow && j == startCol) {
                     cell.setBackground(Color.RED);
                     cell.setEnabled(false);
-                }
-                else if (i == endRow && j == endCol) {
+                } else if (i == endRow && j == endCol) {
                     cell.setBackground(Color.BLUE);
                     cell.setEnabled(false);
-                }
-                else{
+                } else {
                     cell.setBackground(cellColor);
                     addCellListeners(cell);
                 }
@@ -84,6 +87,8 @@ public class DijkstraVisualizer {
         cell.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
+                if (isAnimating) return;
+
                 isDragging = true;
                 Color currentColor = cell.getBackground();
 
@@ -95,8 +100,7 @@ public class DijkstraVisualizer {
                 if (!currentColor.equals(wallColor)) {
                     isAddingWalls = true;
                     cell.setBackground(wallColor);
-                }
-                else {
+                } else {
                     isAddingWalls = false;
                     cell.setBackground(cellColor);
                 }
@@ -109,6 +113,8 @@ public class DijkstraVisualizer {
 
             @Override
             public void mouseEntered(MouseEvent e) {
+                if (isAnimating) return;
+
                 if (isDragging) {
                     Color currentColor = cell.getBackground();
 
@@ -118,8 +124,7 @@ public class DijkstraVisualizer {
 
                     if (isAddingWalls && !currentColor.equals(wallColor)) {
                         cell.setBackground(wallColor);
-                    }
-                    else if (!isAddingWalls && !currentColor.equals(cellColor)) {
+                    } else if (!isAddingWalls && !currentColor.equals(cellColor)) {
                         cell.setBackground(cellColor);
                     }
                 }
@@ -128,12 +133,13 @@ public class DijkstraVisualizer {
 
         // Simple click
         cell.addActionListener(_ -> {
+            if (isAnimating) return;
+
             if (!isDragging) {
                 Color currentColor = cell.getBackground();
                 if (currentColor.equals(cellColor)) {
                     cell.setBackground(wallColor);
-                }
-                else if (currentColor.equals(wallColor)) {
+                } else if (currentColor.equals(wallColor)) {
                     cell.setBackground(cellColor);
                 }
             }
@@ -144,7 +150,6 @@ public class DijkstraVisualizer {
         int row = 10;
         int col = 10;
         int total = row * col;
-
         int[] distances = new int[total];
         int[] previous = new int[total];
         boolean[] visited = new boolean[total];
@@ -178,9 +183,9 @@ public class DijkstraVisualizer {
             int uX = u / col;
             int uY = u % col;
 
-            // Print visited cells
-            if (!(uX == startRow && uY == startCol) && !(uX == endRow && uY == endCol)) {
-                cells[uX][uY].setBackground(visitedColor);
+            if (!(uX == startRow && uY == startCol) && !(uX == endRow && uY == endCol) &&
+                    !cells[uX][uY].getBackground().equals(wallColor)) {
+                visitOrder.add(u);
             }
 
             // 4-directional movement
@@ -206,7 +211,6 @@ public class DijkstraVisualizer {
                 }
             }
         }
-
         // No path found
         if (distances[destination] == Integer.MAX_VALUE) {
             return null;
@@ -222,36 +226,27 @@ public class DijkstraVisualizer {
             actual = previous[actual];
         }
 
-        int[] path = new int[size + 1];
-        path[0] = size;
+        int[] path = new int[size];
 
         for (int i = 0; i < size; i++) {
-            path[i + 1] = temp[size - 1 - i];
+            path[i] = temp[size - 1 - i];
         }
 
         return path;
     }
 
     void runDijkstra() {
+        if (isAnimating) return;
+
         clearPath();
         int[] path = dijkstraAlgorithm(startRow, startCol, endRow, endCol);
-
-        if (path == null) {
-            JOptionPane.showMessageDialog(frame, "There is no possible way!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        for (int i = 1; i < path.length - 1; i++) {
-            int pos = path[i];
-            int r = pos / 10;
-            int c = pos % 10;
-            if (!(r == startRow && c == startCol) && !(r == endRow && c == endCol)) {
-                cells[r][c].setBackground(pathColor);
-            }
-        }
+        animateVisitedCells(visitOrder, path);
     }
 
     void clearPath() {
+        if (isAnimating) return;
+
+        visitOrder.clear();
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
                 Color current = cells[i][j].getBackground();
@@ -263,6 +258,8 @@ public class DijkstraVisualizer {
     }
 
     void clearAll() {
+        if (isAnimating) return;
+
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
                 if ((i == startRow && j == startCol) || (i == endRow && j == endCol)) {
@@ -270,6 +267,45 @@ public class DijkstraVisualizer {
                 }
                 cells[i][j].setBackground(cellColor);
             }
+        }
+    }
+
+    void animateVisitedCells(List<Integer> visitOrder, int[] path) {
+        isAnimating = true;
+        Timer timer = new Timer(40, null);
+        final int[] index = {0};
+
+        timer.addActionListener(_ -> {
+            if (index[0] < visitOrder.size()) {
+                int pos = visitOrder.get(index[0]);
+                posToCoords(pos, visitedColor);
+                index[0]++;
+            } else {
+                timer.stop();
+
+                // Paint path
+                if (path == null) {
+                    JOptionPane.showMessageDialog(frame, "There is no possible way!", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                for (int i = 1; i < path.length - 1; i++) {
+                    int pos = path[i];
+                    posToCoords(pos, pathColor);
+                }
+                isAnimating = false;
+            }
+        });
+
+        timer.start();
+    }
+
+    private void posToCoords(int pos, Color color) {
+        int r = pos / 10;
+        int c = pos % 10;
+
+        if (!(r == startRow && c == startCol) && !(r == endRow && c == endCol)) {
+            cells[r][c].setBackground(color); // Paint cells
         }
     }
 }
