@@ -16,6 +16,7 @@ public class DijkstraVisualizer {
     Color wallColor = new Color(21, 21, 20);
     Color cellColor = new Color(245, 249, 228);
     Color pathColor = new Color(255, 0, 255);
+    Color visitedColor = Color.YELLOW;
 
     boolean isDragging = false;
     boolean isAddingWalls = true;
@@ -24,7 +25,7 @@ public class DijkstraVisualizer {
         // Frame
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setResizable(false);
-        frame.setSize(600, 600);
+        frame.setSize(600, 650);
 
         // Control panel
         JButton runButton = new JButton("Run Dijkstra");
@@ -86,11 +87,16 @@ public class DijkstraVisualizer {
                 isDragging = true;
                 Color currentColor = cell.getBackground();
 
-                if (currentColor.equals(cellColor)) {
+                if (currentColor.equals(Color.RED) || currentColor.equals(Color.BLUE)) {
+                    return;
+                }
+                clearPath();
+
+                if (!currentColor.equals(wallColor)) {
                     isAddingWalls = true;
                     cell.setBackground(wallColor);
                 }
-                else if (currentColor.equals(wallColor)) {
+                else {
                     isAddingWalls = false;
                     cell.setBackground(cellColor);
                 }
@@ -110,10 +116,10 @@ public class DijkstraVisualizer {
                         return;
                     }
 
-                    if (isAddingWalls && currentColor.equals(cellColor)) {
+                    if (isAddingWalls && !currentColor.equals(wallColor)) {
                         cell.setBackground(wallColor);
                     }
-                    else if (!isAddingWalls && currentColor.equals(wallColor)) {
+                    else if (!isAddingWalls && !currentColor.equals(cellColor)) {
                         cell.setBackground(cellColor);
                     }
                 }
@@ -171,6 +177,11 @@ public class DijkstraVisualizer {
 
             int uX = u / col;
             int uY = u % col;
+
+            // Print visited cells
+            if (!(uX == startRow && uY == startCol) && !(uX == endRow && uY == endCol)) {
+                cells[uX][uY].setBackground(visitedColor);
+            }
 
             // 4-directional movement
             int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
@@ -244,7 +255,7 @@ public class DijkstraVisualizer {
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
                 Color current = cells[i][j].getBackground();
-                if (current.equals(pathColor)) {
+                if (current.equals(pathColor) || current.equals(visitedColor)) {
                     cells[i][j].setBackground(cellColor);
                 }
             }
