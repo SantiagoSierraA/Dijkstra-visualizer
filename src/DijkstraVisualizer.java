@@ -25,8 +25,6 @@ public class DijkstraVisualizer {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setResizable(false);
         frame.setSize(600, 600);
-        frame.setVisible(true);
-        frame.setLocationRelativeTo(null);
 
         // Control panel
         JButton runButton = new JButton("Run Dijkstra");
@@ -45,6 +43,9 @@ public class DijkstraVisualizer {
         gridPanel.setLayout(new GridLayout(10, 10,2,2));
         gridPanel.setBackground(Color.BLACK);
         frame.add(gridPanel);
+
+        frame.setVisible(true);
+        frame.setLocationRelativeTo(null);
 
         createGrid();
     }
