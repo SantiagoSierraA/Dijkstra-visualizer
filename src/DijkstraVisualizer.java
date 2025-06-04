@@ -142,6 +142,7 @@ public class DijkstraVisualizer {
         int[] previous = new int[total];
         boolean[] visited = new boolean[total];
 
+        // Initialization
         for (int i = 0; i < total; i++) {
             distances[i] = Integer.MAX_VALUE;
             previous[i] = -1;
@@ -152,9 +153,11 @@ public class DijkstraVisualizer {
         int destination = destinationX * col + destinationY;
         distances[origin] = 0;
 
+        // Main loop
         for (int count = 0; count < total - 1; count++) {
             int u = -1;
 
+            // Minimum distance node
             for (int v = 0; v < total; v++) {
                 if (!visited[v] && (u == -1 || distances[v] < distances[u])) {
                     u = v;
@@ -168,20 +171,23 @@ public class DijkstraVisualizer {
             int uX = u / col;
             int uY = u % col;
 
+            // 4-directional movement
             int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
             for (int[] dir : directions) {
                 int vX = uX + dir[0];
                 int vY = uY + dir[1];
 
+                // Out of bounds
                 if (vX < 0 || vX >= row || vY < 0 || vY >= col) continue;
 
-                // Verify wall
+                // Skip wall cells
                 if (cells[vX][vY].getBackground().equals(wallColor)) continue;
 
                 int v = vX * col + vY;
                 int weight = 1;
 
+                // Relaxation
                 if (!visited[v] && distances[u] != Integer.MAX_VALUE && distances[u] + weight < distances[v]) {
                     distances[v] = distances[u] + weight;
                     previous[v] = u;
@@ -189,10 +195,12 @@ public class DijkstraVisualizer {
             }
         }
 
+        // No path found
         if (distances[destination] == Integer.MAX_VALUE) {
             return null;
         }
 
+        // Reconstruct path
         int[] temp = new int[total];
         int size = 0;
         int actual = destination;
