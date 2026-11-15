@@ -9,6 +9,7 @@ public class DijkstraVisualizer {
     JFrame frame = new JFrame("Dijkstra Visualizer");
     JPanel gridPanel = new JPanel();
     JPanel controlPanel = new JPanel();
+    JLabel statusLabel = new JLabel("Click or drag to draw walls.");
     JButton[][] cells = new JButton[10][10];
     int startRow = 1;
     int startCol = 1;
@@ -17,10 +18,15 @@ public class DijkstraVisualizer {
 
     List<Integer> visitOrder = new ArrayList<>();
 
-    Color wallColor = new Color(21, 21, 20);
-    Color cellColor = new Color(245, 249, 228);
-    Color pathColor = new Color(255, 0, 255);
-    Color visitedColor = Color.YELLOW;
+    Color backgroundColor = new Color(15, 23, 42);
+    Color textColor = new Color(226, 232, 240);
+    Color mutedTextColor = new Color(148, 163, 184);
+    Color startColor = new Color(34, 197, 94);
+    Color endColor = new Color(244, 63, 94);
+    Color wallColor = new Color(226, 232, 240);
+    Color cellColor = new Color(30, 41, 59);
+    Color pathColor = new Color(251, 191, 36);
+    Color visitedColor = new Color(76, 72, 170);
 
     boolean isDragging = false;
     boolean isAddingWalls = true;
@@ -30,30 +36,105 @@ public class DijkstraVisualizer {
         // Frame
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setResizable(false);
-        frame.setSize(600, 650);
+        frame.getContentPane().setBackground(backgroundColor);
+        frame.setLayout(new BorderLayout(0, 16));
+        ((JComponent) frame.getContentPane()).setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24));
 
-        // Control panel
-        JButton runButton = new JButton("Run Dijkstra");
+        // Header: title, status and buttons
+        JLabel title = new JLabel("Dijkstra Visualizer");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        title.setForeground(textColor);
+
+        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        statusLabel.setForeground(mutedTextColor);
+
+        JPanel titlePanel = new JPanel();
+        titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
+        titlePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 12));
+        titlePanel.setOpaque(false);
+        titlePanel.add(title);
+        titlePanel.add(statusLabel);
+
+        JButton runButton = createButton("Run Dijkstra", startColor);
         runButton.addActionListener(_ -> runDijkstra());
 
-        JButton clearButton = new JButton("Clear all");
+        JButton clearButton = createButton("Clear all", new Color(51, 65, 85));
         clearButton.addActionListener(_ -> clearAll());
 
-        controlPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 40, 10));
+        controlPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        controlPanel.setOpaque(false);
         controlPanel.add(runButton);
         controlPanel.add(clearButton);
-        frame.add(controlPanel, BorderLayout.NORTH);
 
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+        header.add(titlePanel, BorderLayout.WEST);
+        header.add(controlPanel, BorderLayout.EAST);
+        frame.add(header, BorderLayout.NORTH);
 
         // Grid panel
-        gridPanel.setLayout(new GridLayout(10, 10, 2, 2));
-        gridPanel.setBackground(Color.BLACK);
-        frame.add(gridPanel);
+        gridPanel.setLayout(new GridLayout(10, 10, 4, 4));
+        gridPanel.setBackground(backgroundColor);
+        gridPanel.setPreferredSize(new Dimension(560, 560));
+        frame.add(gridPanel, BorderLayout.CENTER);
 
-        frame.setVisible(true);
-        frame.setLocationRelativeTo(null);
+        // Legend
+        JPanel legend = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
+        legend.setOpaque(false);
+        legend.add(createLegendItem("Start", startColor));
+        legend.add(createLegendItem("End", endColor));
+        legend.add(createLegendItem("Wall", wallColor));
+        legend.add(createLegendItem("Visited", visitedColor));
+        legend.add(createLegendItem("Shortest path", pathColor));
+        frame.add(legend, BorderLayout.SOUTH);
 
         createGrid();
+
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+
+    JButton createButton(String text, Color color) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        button.setForeground(Color.WHITE);
+        button.setBackground(color);
+        button.setContentAreaFilled(false);
+        button.setOpaque(true);
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(9, 18, 9, 18));
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        // Lighter color on hover
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(color.brighter());
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(color);
+            }
+        });
+        return button;
+    }
+
+    JPanel createLegendItem(String text, Color color) {
+        JPanel swatch = new JPanel();
+        swatch.setBackground(color);
+        swatch.setPreferredSize(new Dimension(14, 14));
+
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        label.setForeground(mutedTextColor);
+
+        JPanel item = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        item.setOpaque(false);
+        item.add(swatch);
+        item.add(label);
+        return item;
     }
 
     void createGrid() {
@@ -61,21 +142,24 @@ public class DijkstraVisualizer {
             for (int j = 0; j < 10; j++) {
                 JButton cell = new JButton();
                 cell.setFocusable(false);
-                cell.setBorderPainted(true);
+                cell.setContentAreaFilled(false);
                 cell.setOpaque(true);
+                cell.setBorder(BorderFactory.createEmptyBorder());
+                cell.setFont(new Font("Segoe UI", Font.BOLD, 20));
+                cell.setForeground(Color.WHITE);
 
                 if (i == startRow && j == startCol) {
-                    cell.setBackground(Color.RED);
-                    cell.setEnabled(false);
+                    cell.setBackground(startColor);
+                    cell.setText("A");
                 } else if (i == endRow && j == endCol) {
-                    cell.setBackground(Color.BLUE);
-                    cell.setEnabled(false);
+                    cell.setBackground(endColor);
+                    cell.setText("B");
                 } else {
                     cell.setBackground(cellColor);
+                    cell.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                     addCellListeners(cell);
                 }
 
-                cell.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
                 cells[i][j] = cell;
                 gridPanel.add(cell);
             }
@@ -92,7 +176,7 @@ public class DijkstraVisualizer {
                 isDragging = true;
                 Color currentColor = cell.getBackground();
 
-                if (currentColor.equals(Color.RED) || currentColor.equals(Color.BLUE)) {
+                if (currentColor.equals(startColor) || currentColor.equals(endColor)) {
                     return;
                 }
                 clearPath();
@@ -118,7 +202,7 @@ public class DijkstraVisualizer {
                 if (isDragging) {
                     Color currentColor = cell.getBackground();
 
-                    if (currentColor.equals(Color.RED) || currentColor.equals(Color.BLUE)) {
+                    if (currentColor.equals(startColor) || currentColor.equals(endColor)) {
                         return;
                     }
 
@@ -239,6 +323,7 @@ public class DijkstraVisualizer {
         if (isAnimating) return;
 
         clearPath();
+        setStatus("Searching...", mutedTextColor);
         int[] path = dijkstraAlgorithm(startRow, startCol, endRow, endCol);
         animateVisitedCells(visitOrder, path);
     }
@@ -247,6 +332,7 @@ public class DijkstraVisualizer {
         if (isAnimating) return;
 
         visitOrder.clear();
+        setStatus("Click or drag to draw walls.", mutedTextColor);
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
                 Color current = cells[i][j].getBackground();
@@ -259,6 +345,8 @@ public class DijkstraVisualizer {
 
     void clearAll() {
         if (isAnimating) return;
+
+        clearPath();
 
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
@@ -283,9 +371,11 @@ public class DijkstraVisualizer {
             } else {
                 timer.stop();
 
+                isAnimating = false;
+
                 // Paint path
                 if (path == null) {
-                    JOptionPane.showMessageDialog(frame, "There is no possible way!", "Error", JOptionPane.ERROR_MESSAGE);
+                    setStatus("No path found: B is blocked by walls.", endColor);
                     return;
                 }
 
@@ -293,11 +383,16 @@ public class DijkstraVisualizer {
                     int pos = path[i];
                     posToCoords(pos, pathColor);
                 }
-                isAnimating = false;
+                setStatus("Visited " + visitOrder.size() + " cells, shortest path: " + (path.length - 1) + " steps.", pathColor);
             }
         });
 
         timer.start();
+    }
+
+    void setStatus(String text, Color color) {
+        statusLabel.setText(text);
+        statusLabel.setForeground(color);
     }
 
     private void posToCoords(int pos, Color color) {
