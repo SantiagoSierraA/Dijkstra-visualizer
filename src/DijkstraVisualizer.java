@@ -9,6 +9,7 @@ public class DijkstraVisualizer {
     JFrame frame = new JFrame("Dijkstra Visualizer");
     JPanel gridPanel = new JPanel();
     JPanel controlPanel = new JPanel();
+    JLabel statusLabel = new JLabel("Click or drag to draw walls.");
     JButton[][] cells = new JButton[10][10];
     int startRow = 1;
     int startCol = 1;
@@ -39,21 +40,20 @@ public class DijkstraVisualizer {
         frame.setLayout(new BorderLayout(0, 16));
         ((JComponent) frame.getContentPane()).setBorder(BorderFactory.createEmptyBorder(20, 24, 20, 24));
 
-        // Header: title, subtitle and buttons
+        // Header: title, status and buttons
         JLabel title = new JLabel("Dijkstra Visualizer");
         title.setFont(new Font("Segoe UI", Font.BOLD, 24));
         title.setForeground(textColor);
 
-        JLabel subtitle = new JLabel("Click or drag to draw walls.");
-        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        subtitle.setForeground(mutedTextColor);
+        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        statusLabel.setForeground(mutedTextColor);
 
         JPanel titlePanel = new JPanel();
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
         titlePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 12));
         titlePanel.setOpaque(false);
         titlePanel.add(title);
-        titlePanel.add(subtitle);
+        titlePanel.add(statusLabel);
 
         JButton runButton = createButton("Run Dijkstra", startColor);
         runButton.addActionListener(_ -> runDijkstra());
@@ -323,6 +323,7 @@ public class DijkstraVisualizer {
         if (isAnimating) return;
 
         clearPath();
+        setStatus("Searching...", mutedTextColor);
         int[] path = dijkstraAlgorithm(startRow, startCol, endRow, endCol);
         animateVisitedCells(visitOrder, path);
     }
@@ -331,6 +332,7 @@ public class DijkstraVisualizer {
         if (isAnimating) return;
 
         visitOrder.clear();
+        setStatus("Click or drag to draw walls.", mutedTextColor);
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
                 Color current = cells[i][j].getBackground();
@@ -343,6 +345,8 @@ public class DijkstraVisualizer {
 
     void clearAll() {
         if (isAnimating) return;
+
+        clearPath();
 
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
@@ -367,9 +371,11 @@ public class DijkstraVisualizer {
             } else {
                 timer.stop();
 
+                isAnimating = false;
+
                 // Paint path
                 if (path == null) {
-                    JOptionPane.showMessageDialog(frame, "There is no possible way!", "Error", JOptionPane.ERROR_MESSAGE);
+                    setStatus("No path found: B is blocked by walls.", endColor);
                     return;
                 }
 
@@ -377,11 +383,16 @@ public class DijkstraVisualizer {
                     int pos = path[i];
                     posToCoords(pos, pathColor);
                 }
-                isAnimating = false;
+                setStatus("Visited " + visitOrder.size() + " cells, shortest path: " + (path.length - 1) + " steps.", pathColor);
             }
         });
 
         timer.start();
+    }
+
+    void setStatus(String text, Color color) {
+        statusLabel.setText(text);
+        statusLabel.setForeground(color);
     }
 
     private void posToCoords(int pos, Color color) {
